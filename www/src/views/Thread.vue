@@ -26,11 +26,18 @@
             <div class="media-content">
               <div class="content">
                 <h4> {{ mainPost.poster.id }}</h4>
-                <small> {{ mainPost.time }} </small>
+                <small> <span>楼主</span> {{ mainPost.time }} </small>
               </div>
             </div>
             <div class="media-right">
-              <span>楼主</span>
+              <span>
+                <a @click="reply(mainPost)"><i class="iconfont icon-comments"></i></a>
+              </span>
+              <span>
+                <i class="iconfont icon-good"></i>
+                {{ mainPost.voteup_count }}
+              </span>
+
             </div>
           </div>
           <div class="article-body content"  v-html="mainPost.content"> </div>
@@ -56,16 +63,21 @@
               <div class="media-content">
                 <div class="content">
                   <h4> {{ article.poster ? article.poster.id : '已注销'}}</h4>
-                  <small> {{ article.time }}</small>
+                  <small>
+                    <span>{{ article.pos == 1 ? '沙发' : (article.pos == 2 ? '板凳' : article.pos + '楼') }}</span>
+                    {{ article.time }}
+                  </small>
                 </div>
               </div>
               <div class="media-right">
-                <span>{{ article.pos == 1 ? '沙发' : (article.pos == 2 ? '板凳' : article.pos + '楼') }}</span>
+                <span>
+                  <a @click="reply(mainPost)"><i class="iconfont icon-comments"></i></a>
+                </span>
                 <span>
                   <a v-if="! article.voted" @click="voteup(article, index)">
-                    <i class="iconfont icon-voteup"></i>
+                    <i class="iconfont icon-good"></i>
                   </a>
-                  <i v-else class="iconfont icon-voteup"></i>
+                  <i v-else class="iconfont icon-good voted"></i>
                   {{ article.voteup_count }}
                 </span>
               </div>
@@ -88,16 +100,21 @@
               <div class="media-content">
                 <div class="content">
                   <h4> {{ article.poster ? article.poster.id : '已注销'}}</h4>
-                  <small> {{ article.time }}</small>
+                  <small>
+                    <span>{{ article.pos == 1 ? '沙发' : article.pos == 2 ? '板凳' : article.pos +  '楼' }}</span>
+                    {{ article.time }}
+                  </small>
                 </div>
               </div>
               <div class="media-right">
-                <span>{{ article.pos == 1 ? '沙发' : article.pos == 2 ? '板凳' : article.pos +  '楼' }}</span>
+                <span>
+                  <a @click="reply(mainPost)"><i class="iconfont icon-comments"></i></a>
+                </span>
                 <span>
                   <a v-if="! article.voted" @click="voteup(article, index)">
-                    <i class="iconfont icon-voteup"></i>
+                    <i class="iconfont icon-good"></i>
                   </a>
-                  <i v-else class="iconfont icon-voteup"></i>
+                  <i v-else class="iconfont icon-good voted"></i>
                   {{ article.voteup_count }}
                 </span>
               </div>
@@ -125,7 +142,7 @@
             <a @click="getNextPage">下一页</a>
           </div>
           <div class="column">
-            <a @click="getReply">回复</a>
+            <a @click="reply">回复</a>
           </div>
         </header>
       </div>
@@ -249,7 +266,10 @@ export default {
       });
     },
 
-    getReply() {
+    reply(article) {
+      const title = encodeURIComponent(this.title);
+      let url = `type=reply&reid=${article.id}&board=${this.board.name}&retitle=${title}`;
+      this.$router.push('/post?' + url);
     }
 
   }
@@ -292,5 +312,11 @@ h4 {
     background: #ddd;
     float: right;
     margin-top: 13px;
+}
+.media-right a {
+    color: #4a4a4a;
+}
+.voted {
+    color: #00d1b2;
 }
 </style>

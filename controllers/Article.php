@@ -8,6 +8,10 @@ class ArticleController extends NF_YambController {
      */
     private $board;
 
+    private $fromType = 2;
+
+    private $tex = 0;
+
     public function init() {
         load('model/article');
         parent::init();
@@ -248,4 +252,71 @@ class ArticleController extends NF_YambController {
         return $this->success(['count' => $sum]);
     }
 
+    public function postAction() {
+        if(! $this->getRequest()->isPost()) {
+            return $this->abort();
+        }
+
+        if ($this->board->isReadOnly()) {
+            return  $this->fail('只读版面');
+        }
+        if (! $this->board->hasPostPerm(User::getInstance())) { 
+            return  $this->fail('缺少权限');
+        }
+
+        $article = false;
+        // reply mode
+        if (isset($this->params['gid'])) {
+            if ($this->board->isNoReply()) {
+                return $this->fail('版面不可回复');
+            }
+
+            $reID = (int) $this->params['gid'];
+            try {
+                $article = Article::getInstance($reID, $this->board);
+            } catch(ArticleNullException $e) {
+                return $this->fail('目标帖未找到');
+            }
+            if ($article->isNoRe()) {
+                return $this->fail('目标帖不可回复');
+            }
+        } else {
+            if($this->board->isTmplPost()) {
+                return $this->fail('版面仅限模板发帖');
+            }
+            $reID = 0;
+        }
+
+        if(! isset($this->params['form']['subject'])) {
+            return $this->fail('标题不能为空');
+        }
+        if(! isset($this->params['form']['content'])) {
+            return $this->fail('内容不能为空');
+        }
+
+        $subject = trim($this->params['form']['subject']);
+        $content = trim($this->params['form']['content']);
+        $subject = nforum_iconv($this->encoding, 'GBK', $subject);
+        $content = nforum_iconv($this->encoding, 'GBK', $content);
+            
+        //$subject = rawurldecode($subject);
+        $sig = User::getInstance()->signature;
+        $email = 0; $anony = null; $outgo = 0;
+        if (isset($this->params['form']['anony']) && $this->board->isAnony()) {
+            $anony = 1;
+        }
+        if (isset($this->params['form']['outgo']) && $this->board->isOutgo()) {
+            $outgo = 1;
+        }
+        try {
+            if (false === $article) { // new post
+                Article::post($this->board, $subject, $content, $sig, $email, $anony, $outgo, $this->tex, $this->fromType);
+            } else { // reply
+                $article->reply($subject, $content, $sig, $email, $anony, $outgo, $this->tex, $this->fromType);
+            }
+        }catch(ArticlePostException $e){
+            return $this->fail('操作失败');
+        }
+        return $this->success();
+    }
 }
